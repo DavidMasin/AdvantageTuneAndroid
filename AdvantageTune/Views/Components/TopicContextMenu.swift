@@ -36,6 +36,17 @@ public struct TopicContextMenuModifier: ViewModifier {
         let isImmutable = resolvedTopic?.isImmutable ?? false
 
         if !isImmutable {
+          if let resolved = resolvedTopic,
+            let zeroValue = Self.zeroedValue(for: value, topic: resolved),
+            value != zeroValue
+          {
+            Button {
+              store.updateValue(for: resolved, newValue: zeroValue)
+            } label: {
+              Label("Zero", systemImage: "0.circle")
+            }
+          }
+
           let isPublished = store.isPublished(topicName: topicName)
           if isPublished {
             Button {
@@ -84,6 +95,38 @@ public struct TopicContextMenuModifier: ViewModifier {
           Label("Copy Key", systemImage: "doc.on.doc")
         }
       }
+    }
+  }
+
+  private static func zeroedValue(for value: TopicValue?, topic: NT4Topic) -> TopicValue? {
+    if let value {
+      switch value {
+      case .double:
+        return .double(0)
+      case .float:
+        return .float(0)
+      case .int:
+        return .int(0)
+      case .doubleArray(let arr) where !arr.isEmpty:
+        return .doubleArray(Array(repeating: 0, count: arr.count))
+      case .floatArray(let arr) where !arr.isEmpty:
+        return .floatArray(Array(repeating: 0, count: arr.count))
+      case .intArray(let arr) where !arr.isEmpty:
+        return .intArray(Array(repeating: 0, count: arr.count))
+      default:
+        return nil
+      }
+    }
+
+    switch topic.type.lowercased() {
+    case "double":
+      return .double(0)
+    case "float":
+      return .float(0)
+    case "int":
+      return .int(0)
+    default:
+      return nil
     }
   }
 }
