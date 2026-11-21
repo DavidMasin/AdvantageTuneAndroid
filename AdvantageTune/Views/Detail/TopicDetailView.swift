@@ -79,7 +79,7 @@ public struct TopicDetailView: View {
                 if let val = latestValue {
                   Text(val.formattedString)
                     .font(.system(.subheadline, design: .monospaced))
-                    .foregroundColor(.primary)
+                    .foregroundColor(store.connectionStatus.isConnected ? .primary : .secondary)
                     .lineLimit(8)
                     .multilineTextAlignment(.leading)
                 } else {
@@ -97,7 +97,7 @@ public struct TopicDetailView: View {
                 if let val = latestValue {
                   Text(val.formattedString)
                     .font(.system(.body, design: .monospaced).weight(.bold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(store.connectionStatus.isConnected ? .primary : .secondary)
                     .lineLimit(2)
                     .truncationMode(.tail)
                     .multilineTextAlignment(.trailing)
@@ -162,7 +162,12 @@ public struct TopicDetailView: View {
       // MARK: - Binary Telemetry
       if isRawTopic {
         Section {
-          RawTelemetryView(topic: topic, rawData: latestValueData, fallbackValue: latestValue)
+          RawTelemetryView(
+            topic: topic,
+            rawData: latestValueData,
+            fallbackValue: latestValue,
+            isConnected: store.connectionStatus.isConnected
+          )
         } header: {
           Text("Binary Telemetry")
         }
@@ -171,7 +176,7 @@ public struct TopicDetailView: View {
       // MARK: - Primitive Array Editor
       if isPrimitiveArrayTopic && !topic.isImmutable {
         Section {
-          if let val = latestValue {
+          if let val = store.tunedEntries[topic.name]?.currentValue ?? latestValue {
             TopicArrayEditorView(topicName: topic.name, value: val, onCommit: applyUpdate)
           } else {
             Text("Waiting for array data...")
@@ -216,6 +221,7 @@ public struct TopicDetailView: View {
           Button(role: .destructive) {
             Haptics.notification(.warning)
             store.revertAndUnpublishTopic(name: topic.name)
+            localStructValue = nil
             syncLocalStateWithLatest()
           } label: {
             HStack {
@@ -231,6 +237,13 @@ public struct TopicDetailView: View {
     }
     .navigationTitle(topic.name.split(separator: "/").last.map(String.init) ?? topic.name)
     .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        if !store.connectionStatus.isConnected {
+          ConnectionStatusPill(store: store)
+        }
+      }
+    }
     .onAppear {
       store.acquireSubscription(for: topic.name)
       syncLocalStateWithLatest()

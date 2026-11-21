@@ -247,6 +247,10 @@ public final class NTStore: NT4ClientDelegate {
 
   // MARK: - Value Publishing & Editing
 
+  private var canPublishToServer: Bool {
+    connectionStatus.isConnected && (isDemoMode || client.isTimeSynced)
+  }
+
   /// Updates a topic value. If not published, automatically publishes it first.
   public func updateValue(for topic: NT4Topic, newValue: TopicValue) {
     let topicName = topic.name
@@ -265,7 +269,7 @@ public final class NTStore: NT4ClientDelegate {
       nextPubUid += 1
       orig = latestValues[topicName]
       mergedProps = topic.properties
-      if !isDemoMode && client.isTimeSynced {
+      if !isDemoMode && connectionStatus.isConnected && client.isTimeSynced {
         client.publish(
           name: topicName, type: topic.type, pubuid: pubuid, properties: mergedProps)
       }
@@ -282,14 +286,16 @@ public final class NTStore: NT4ClientDelegate {
       lastModified: now
     )
 
-    // Send new value to server (if time sync is still pending, clientDidSyncTime will republish)
-    if !isDemoMode && client.isTimeSynced {
+    // Send new value to server (if disconnected or time sync is pending, republishTunedValues will publish on connect)
+    if !isDemoMode && connectionStatus.isConnected && client.isTimeSynced {
       client.setValue(newValue, forPubuid: pubuid, typeIndex: topic.typeIndex)
     }
 
-    // Update local state
-    latestValues[topicName] = newValue
-    valueTimestamps[topicName] = now
+    // Only update server value state when actively connected
+    if canPublishToServer {
+      latestValues[topicName] = newValue
+      valueTimestamps[topicName] = now
+    }
   }
 
   /// Reverts a topic's value back to its baseline server value.
@@ -297,14 +303,16 @@ public final class NTStore: NT4ClientDelegate {
     guard let entry = tunedEntries[name], let orig = entry.originalValue else { return }
 
     // Push baseline value to server
-    if !isDemoMode && client.isTimeSynced {
+    if !isDemoMode && connectionStatus.isConnected && client.isTimeSynced {
       let typeIndex = topicsByName[name]?.typeIndex ?? NT4Constants.typeIndex(for: entry.topicType)
       client.setValue(orig, forPubuid: entry.pubuid, typeIndex: typeIndex)
     }
 
-    latestValues[name] = orig
     let now = Date()
-    valueTimestamps[name] = now
+    if canPublishToServer {
+      latestValues[name] = orig
+      valueTimestamps[name] = now
+    }
 
     var updated = entry
     updated.currentValue = orig
@@ -315,7 +323,7 @@ public final class NTStore: NT4ClientDelegate {
   /// Unpublishes a topic and removes it from tuned entries.
   public func unpublishTopic(name: String) {
     guard let entry = tunedEntries.removeValue(forKey: name) else { return }
-    if !isDemoMode && client.isTimeSynced {
+    if !isDemoMode && connectionStatus.isConnected && client.isTimeSynced {
       client.unpublish(pubuid: entry.pubuid)
     }
   }
@@ -323,12 +331,14 @@ public final class NTStore: NT4ClientDelegate {
   /// Convenience to revert value and unpublish topic.
   public func revertAndUnpublishTopic(name: String) {
     if let entry = tunedEntries[name], let orig = entry.originalValue {
-      if !isDemoMode && client.isTimeSynced {
+      if !isDemoMode && connectionStatus.isConnected && client.isTimeSynced {
         let typeIndex = NT4Constants.typeIndex(for: entry.topicType)
         client.setValue(orig, forPubuid: entry.pubuid, typeIndex: typeIndex)
       }
-      latestValues[name] = orig
-      valueTimestamps[name] = Date()
+      if canPublishToServer {
+        latestValues[name] = orig
+        valueTimestamps[name] = Date()
+      }
     }
     unpublishTopic(name: name)
   }

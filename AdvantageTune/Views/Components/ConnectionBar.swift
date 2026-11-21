@@ -104,7 +104,16 @@ public struct ConnectionBar: View {
   }
 
   private var statusColor: Color {
-    switch store.connectionStatus {
+    Self.statusColor(for: store.connectionStatus)
+  }
+
+  @ViewBuilder
+  private var statusTextView: some View {
+    Self.fullStatusTextView(for: store.connectionStatus, serverHost: store.serverHost)
+  }
+
+  fileprivate static func statusColor(for status: ConnectionStatus) -> Color {
+    switch status {
     case .connected:
       return .green
     case .connecting:
@@ -115,8 +124,11 @@ public struct ConnectionBar: View {
   }
 
   @ViewBuilder
-  private var statusTextView: some View {
-    switch store.connectionStatus {
+  fileprivate static func fullStatusTextView(
+    for status: ConnectionStatus,
+    serverHost: String
+  ) -> some View {
+    switch status {
     case .connected(let latencyMs):
       if latencyMs > 0 {
         let formattedLatency = latencyMs.formatted(.number.precision(.fractionLength(1)))
@@ -125,7 +137,77 @@ public struct ConnectionBar: View {
         Text("Connected")
       }
     case .connecting:
-      Text("Connecting to \(store.serverHost)...")
+      Text("Connecting to \(serverHost)...")
+    case .disconnected:
+      Text("Disconnected")
+    }
+  }
+}
+
+public struct ConnectionStatusPill: View {
+  @Bindable var store: NTStore
+
+  public init(store: NTStore) {
+    self.store = store
+  }
+
+  public var body: some View {
+    Menu {
+      Section {
+        Text(
+          verbatim: store.isDemoMode
+            ? "demo"
+            : "\(store.parsedHost):\(String(store.parsedPort))"
+        )
+        ConnectionBar.fullStatusTextView(
+          for: store.connectionStatus,
+          serverHost: store.serverHost
+        )
+      }
+
+      if store.isConnectionRequested || store.connectionStatus.isConnected {
+        Button(role: .destructive) {
+          Haptics.impact(.light)
+          store.disconnect()
+        } label: {
+          Label("Disconnect", systemImage: "network.slash")
+        }
+      } else {
+        Button {
+          Haptics.impact(.light)
+          store.connect()
+        } label: {
+          Label("Connect", systemImage: "network")
+        }
+      }
+    } label: {
+      HStack(spacing: 6) {
+        Circle()
+          .fill(ConnectionBar.statusColor(for: store.connectionStatus))
+          .frame(width: 8, height: 8)
+
+        compactStatusTextView
+          .font(.caption.weight(.semibold))
+          .foregroundColor(
+            store.connectionStatus == .disconnected ? .red : .secondary
+          )
+          .lineLimit(1)
+          .contentTransition(.identity)
+      }
+      .padding(.horizontal, 6)
+      .transaction { transaction in
+        transaction.animation = nil
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var compactStatusTextView: some View {
+    switch store.connectionStatus {
+    case .connected:
+      Text("Connected")
+    case .connecting:
+      Text("Connecting...")
     case .disconnected:
       Text("Disconnected")
     }

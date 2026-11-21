@@ -92,5 +92,12 @@ public struct FolderListView: View {
     }
     .navigationTitle(isRoot ? Text("Browse") : Text(verbatim: node?.name ?? ""))
     .navigationBarTitleDisplayMode(isRoot ? .large : .inline)
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        if !isRoot && !store.connectionStatus.isConnected {
+          ConnectionStatusPill(store: store)
+        }
+      }
+    }
   }
 }

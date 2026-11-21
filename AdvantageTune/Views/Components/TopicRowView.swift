@@ -67,7 +67,7 @@ public struct TopicRowView: View {
       if let val = liveValue {
         Text(val.formattedString)
           .font(.system(.subheadline, design: .monospaced).weight(.semibold))
-          .foregroundColor(.primary)
+          .foregroundColor(store.connectionStatus.isConnected ? .primary : .secondary)
           .lineLimit(1)
           .multilineTextAlignment(.trailing)
       } else {

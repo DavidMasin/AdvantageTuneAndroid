@@ -11,11 +11,18 @@ public struct RawTelemetryView: View {
   public let topic: NT4Topic
   public let rawData: Data?
   public let fallbackValue: TopicValue?
+  public var isConnected: Bool = true
 
-  public init(topic: NT4Topic, rawData: Data?, fallbackValue: TopicValue? = nil) {
+  public init(
+    topic: NT4Topic,
+    rawData: Data?,
+    fallbackValue: TopicValue? = nil,
+    isConnected: Bool = true
+  ) {
     self.topic = topic
     self.rawData = rawData
     self.fallbackValue = fallbackValue
+    self.isConnected = isConnected
   }
 
   private var rawTelemetryLabelKey: LocalizedStringKey {
@@ -38,6 +45,7 @@ public struct RawTelemetryView: View {
         if let rawData = rawData {
           Text("\(rawData.count) bytes")
             .font(.system(.caption, design: .monospaced).weight(.bold))
+            .foregroundColor(isConnected ? .primary : .secondary)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(Color(.tertiarySystemFill))

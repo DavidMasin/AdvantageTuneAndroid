@@ -50,7 +50,10 @@ public struct TuningView: View {
                 let topic =
                   store.topicsByName[entry.topicPath]
                   ?? NT4Topic(id: -1, name: entry.topicPath, type: entry.topicType)
-                let displayValue = store.latestValues[entry.topicPath] ?? entry.currentValue
+                let displayValue =
+                  store.connectionStatus.isConnected
+                  ? (store.latestValues[entry.topicPath] ?? entry.currentValue)
+                  : entry.currentValue
 
                 NavigationLink(destination: TopicDetailView(store: store, topic: topic)) {
                   VStack(alignment: .leading, spacing: 8) {
