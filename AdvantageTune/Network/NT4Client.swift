@@ -10,6 +10,7 @@ import Starscream
 
 public protocol NT4ClientDelegate: AnyObject, Sendable {
   func clientDidConnect(_ client: NT4Client)
+  func clientDidSyncTime(_ client: NT4Client)
   func clientDidDisconnect(_ client: NT4Client, error: Error?)
   func client(_ client: NT4Client, didAnnounceTopics topics: [NT4Topic])
   func client(_ client: NT4Client, didUnannounceTopic topicName: String, topicId: Int)
@@ -34,7 +35,12 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
   private var currentPort: Int = NT4Constants.defaultPort
   private var isConnectionRequested: Bool = false
   private var isConnected: Bool = false
+  private var isRttConnected: Bool = false
   private var isV41: Bool = false
+
+  public var isTimeSynced: Bool {
+    isConnected && timeSync.isSynced
+  }
 
   // Heartbeat & timeout tracking
   private var lastReceivedDate: Date = .distantPast
@@ -56,11 +62,11 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
   public init() {}
 
   private var currentTimeoutInterval: TimeInterval {
-    (isV41 && rttSocket != nil) ? serverTimeoutV41 : serverTimeoutV40
+    (isV41 && isRttConnected && rttSocket != nil) ? serverTimeoutV41 : serverTimeoutV40
   }
 
   private var currentPingPeriod: TimeInterval {
-    (isV41 && rttSocket != nil) ? rttPeriodV41 : rttPeriodV40
+    (isV41 && isRttConnected && rttSocket != nil) ? rttPeriodV41 : rttPeriodV40
   }
 
   // MARK: - Connection Management
@@ -76,6 +82,7 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
   public func disconnect() {
     self.isConnectionRequested = false
     self.isConnected = false
+    self.isRttConnected = false
     self.isV41 = false
     stopAllTimers()
     timeSync.reset()
@@ -111,6 +118,7 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
     let oldRttSocket = rttSocket
     rttSocket?.delegate = nil
     rttSocket = nil
+    self.isRttConnected = false
     self.isV41 = false
 
     oldSocket?.disconnect()
@@ -172,6 +180,7 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
     rttWs.delegate = self
 
     let oldRtt = self.rttSocket
+    self.isRttConnected = false
     self.rttSocket = rttWs
 
     oldRtt?.delegate = nil
@@ -303,7 +312,7 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
       return
     }
     let ping = timeSync.createPingValue()
-    let targetSocket = rttSocket ?? socket
+    let targetSocket = (isRttConnected ? rttSocket : nil) ?? socket
 
     let pingArray: MessagePackStream.Value = .array([
       .int(Int64(ping.topicId)),
@@ -334,6 +343,7 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
   private func handleRttSocketEvent(_ event: WebSocketEvent) {
     switch event {
     case .connected:
+      isRttConnected = true
       lastReceivedDate = Date()
       sendRttPing()
       startHeartbeat()
@@ -343,6 +353,7 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
       handleBinaryMessage(data)
 
     case .disconnected, .error, .cancelled, .peerClosed:
+      isRttConnected = false
       rttSocket?.delegate = nil
       rttSocket = nil
       startHeartbeat()  // Fall back to primary socket ping schedule
@@ -373,10 +384,11 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
         self?.connectWatchdogTimer = nil
       }
 
+      // Always send an immediate RTT ping on the primary socket so time sync
+      // completes in a single round-trip without waiting for the secondary RTT socket handshake.
+      sendRttPing()
       if negotiatedV41 {
         startRttSocket()
-      } else {
-        sendRttPing()
       }
 
       startHeartbeat()
@@ -413,6 +425,7 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
     let wasConnected = isConnected
     let requested = isConnectionRequested
     isConnected = false
+    isRttConnected = false
     isV41 = false
     timeSync.reset()
     serverTopicsById.removeAll()
@@ -536,9 +549,13 @@ public final class NT4Client: WebSocketDelegate, @unchecked Sendable {
         let rawVal = elements[3]
 
         if topicId == -1 {
+          let wasSynced = timeSync.isSynced
           let clientSendUs = rawVal.asInt64 ?? 0
           let latency = timeSync.handlePong(
             serverTimestampUs: timestampUs, clientSendTimestampUs: clientSendUs)
+          if !wasSynced && timeSync.isSynced {
+            delegate?.clientDidSyncTime(self)
+          }
           delegate?.client(self, didUpdateLatencyMs: latency)
         } else {
           let topic = serverTopicsById[topicId]

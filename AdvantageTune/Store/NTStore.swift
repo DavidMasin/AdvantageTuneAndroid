@@ -26,6 +26,7 @@ public struct TunedEntry: Identifiable, Hashable, Sendable {
   public var currentValue: TopicValue
   public var originalValue: TopicValue?
   public var pubuid: Int
+  public var properties: [String: String]
   public var lastModified: Date
 
   public init(
@@ -34,6 +35,7 @@ public struct TunedEntry: Identifiable, Hashable, Sendable {
     currentValue: TopicValue,
     originalValue: TopicValue? = nil,
     pubuid: Int,
+    properties: [String: String] = [:],
     lastModified: Date = Date()
   ) {
     self.topicPath = topicPath
@@ -41,6 +43,7 @@ public struct TunedEntry: Identifiable, Hashable, Sendable {
     self.currentValue = currentValue
     self.originalValue = originalValue
     self.pubuid = pubuid
+    self.properties = properties
     self.lastModified = lastModified
   }
 }
@@ -205,7 +208,7 @@ public final class NTStore: NT4ClientDelegate {
       nextSubUid += 1
       activePathSubs[topicName] = ActiveSub(subuid: subuid, refCount: 1)
 
-      if connectionStatus.isConnected && !isDemoMode {
+      if connectionStatus.isConnected && !isDemoMode && client.isTimeSynced {
         let options = NT4SubscriptionOptions(
           periodic: 0.02, all: false, topicsonly: false, prefix: false)
         client.subscribe(topics: [topicName], subuid: subuid, options: options)
@@ -227,7 +230,7 @@ public final class NTStore: NT4ClientDelegate {
 
     if existing.refCount <= 0 {
       activePathSubs.removeValue(forKey: topicName)
-      if connectionStatus.isConnected && !isDemoMode {
+      if connectionStatus.isConnected && !isDemoMode && client.isTimeSynced {
         client.unsubscribe(subuid: existing.subuid)
       }
     } else {
@@ -251,17 +254,20 @@ public final class NTStore: NT4ClientDelegate {
 
     let pubuid: Int
     let orig: TopicValue?
+    let mergedProps: [String: String]
 
     if let existing = tunedEntries[topicName] {
       pubuid = existing.pubuid
       orig = existing.originalValue ?? latestValues[topicName]
+      mergedProps = existing.properties.merging(topic.properties) { _, new in new }
     } else {
       pubuid = nextPubUid
       nextPubUid += 1
       orig = latestValues[topicName]
-      if !isDemoMode {
+      mergedProps = topic.properties
+      if !isDemoMode && client.isTimeSynced {
         client.publish(
-          name: topicName, type: topic.type, pubuid: pubuid, properties: topic.properties)
+          name: topicName, type: topic.type, pubuid: pubuid, properties: mergedProps)
       }
     }
 
@@ -272,11 +278,12 @@ public final class NTStore: NT4ClientDelegate {
       currentValue: newValue,
       originalValue: orig,
       pubuid: pubuid,
+      properties: mergedProps,
       lastModified: now
     )
 
-    // Send new value to server
-    if !isDemoMode {
+    // Send new value to server (if time sync is still pending, clientDidSyncTime will republish)
+    if !isDemoMode && client.isTimeSynced {
       client.setValue(newValue, forPubuid: pubuid, typeIndex: topic.typeIndex)
     }
 
@@ -290,8 +297,9 @@ public final class NTStore: NT4ClientDelegate {
     guard let entry = tunedEntries[name], let orig = entry.originalValue else { return }
 
     // Push baseline value to server
-    if !isDemoMode, let topic = topicsByName[name] {
-      client.setValue(orig, forPubuid: entry.pubuid, typeIndex: topic.typeIndex)
+    if !isDemoMode && client.isTimeSynced {
+      let typeIndex = topicsByName[name]?.typeIndex ?? NT4Constants.typeIndex(for: entry.topicType)
+      client.setValue(orig, forPubuid: entry.pubuid, typeIndex: typeIndex)
     }
 
     latestValues[name] = orig
@@ -307,7 +315,7 @@ public final class NTStore: NT4ClientDelegate {
   /// Unpublishes a topic and removes it from tuned entries.
   public func unpublishTopic(name: String) {
     guard let entry = tunedEntries.removeValue(forKey: name) else { return }
-    if !isDemoMode {
+    if !isDemoMode && client.isTimeSynced {
       client.unpublish(pubuid: entry.pubuid)
     }
   }
@@ -315,7 +323,7 @@ public final class NTStore: NT4ClientDelegate {
   /// Convenience to revert value and unpublish topic.
   public func revertAndUnpublishTopic(name: String) {
     if let entry = tunedEntries[name], let orig = entry.originalValue {
-      if !isDemoMode {
+      if !isDemoMode && client.isTimeSynced {
         let typeIndex = NT4Constants.typeIndex(for: entry.topicType)
         client.setValue(orig, forPubuid: entry.pubuid, typeIndex: typeIndex)
       }
@@ -432,13 +440,15 @@ public final class NTStore: NT4ClientDelegate {
       let pubuid = nextPubUid
       nextPubUid += 1
       entry.pubuid = pubuid
-      tunedEntries[topicName] = entry
 
       let topicType = entry.topicType
       let typeIndex = NT4Constants.typeIndex(for: topicType)
-      let properties = topicsByName[topicName]?.properties ?? [:]
+      let properties =
+        entry.properties.merging(topicsByName[topicName]?.properties ?? [:]) { _, new in new }
+      entry.properties = properties
+      tunedEntries[topicName] = entry
 
-      if !isDemoMode {
+      if !isDemoMode && client.isTimeSynced {
         client.publish(name: topicName, type: topicType, pubuid: pubuid, properties: properties)
         client.setValue(entry.currentValue, forPubuid: pubuid, typeIndex: typeIndex)
       }
@@ -463,6 +473,18 @@ public final class NTStore: NT4ClientDelegate {
 
       self.nextSubUid = 0
       self.nextPubUid = 0
+    }
+  }
+
+  public nonisolated func clientDidSyncTime(_ client: NT4Client) {
+    Task { @MainActor in
+      guard !self.isDemoMode else { return }
+      guard self.connectionStatus.isConnected else { return }
+
+      // Republish all tuned values first (with a valid synced server timestamp)
+      // before subscribing, so subsequent subscription snapshots from the server
+      // already reflect the republished tuned values.
+      self.republishTunedValues()
 
       // Subscribe to topic list
       let rootOpts = NT4SubscriptionOptions(
@@ -490,9 +512,6 @@ public final class NTStore: NT4ClientDelegate {
         self.client.subscribe(topics: [path], subuid: subuid, options: options)
       }
       self.activePathSubs = remappedActiveSubs
-
-      // Republish all tuned values
-      self.republishTunedValues()
     }
   }
 
