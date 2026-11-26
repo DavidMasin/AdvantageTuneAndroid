@@ -55,3 +55,18 @@ The text and the app icon of the Android app are generated from the iOS project.
 
 - Run `python3 android/tools/import_strings.py` to regenerate the string resources.
 - Run `python3 android/tools/generate_icons.py` to regenerate the launcher icon (this requires [Pillow](https://python-pillow.org)).
+
+## Windows
+
+The `desktop` directory contains a version of AdvantageTune for Windows, built with [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/). It is the Android app in a window: the build compiles the Kotlin sources and reads the resources of the `android` directory, apart from the few files that use Android APIs. Each of those has a counterpart named `*.desktop.kt` under `desktop/src/main/kotlin`.
+
+To build the installer, run `./gradlew packageMsi` in the `desktop` directory on Windows (this requires JDK 17 or later). The installer is written to `desktop/build/compose/binaries/main/msi` and contains its own Java runtime. `./gradlew run` starts the app without installing it, and `./gradlew test` runs the tests. Every push also builds the installer on GitHub Actions, where it can be downloaded from the artifacts of the "Build Desktop" workflow.
+
+The app is made for touch screens:
+
+- The first time it starts, the window opens maximized on the touch screen if there is one. After that it opens where it was when it was closed.
+- Lists scroll when they are dragged, rows on the Tuning tab are swiped to reveal their actions, and holding a finger on a row opens its menu (as does a right click).
+- F11 switches to full screen and back, and Escape goes back.
+- Windows does not open its touch keyboard for the text fields by itself. Tap the keyboard icon on the taskbar to type, or use the step buttons to change values.
+
+After changing `AdvantageTune/AppIcon.icon`, run `python3 desktop/tools/generate_icons.py` to regenerate the icon (this requires [Pillow](https://python-pillow.org)).
