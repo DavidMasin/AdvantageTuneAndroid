@@ -42,10 +42,11 @@ Hostnames ending in `.local` (such as the default `robot.local`) can be resolved
 
 ### Building with EAS
 
-The Android app can also be built in the cloud with [EAS Build](https://docs.expo.dev/build/introduction/). The root of the repository is the EAS project (`app.json`, `eas.json` and `package.json`), and EAS builds the `android` directory with Gradle. The app is not written in React Native, so it cannot run in Expo Go and does not use EAS Update.
+The Android app can also be built in the cloud with [EAS Build](https://docs.expo.dev/build/introduction/). The root of the repository is the EAS project (`app.json`, `eas.json`, and `package.json` with its lockfile, which EAS requires although the project has no dependencies), and EAS builds the `android` directory with Gradle. The app is not written in React Native, so it cannot run in Expo Go and does not use EAS Update.
 
 1. Run `npx eas-cli@latest init` once to create the Expo project and save its ID in `app.json`.
 2. Run `npx eas-cli@latest build --platform android --profile preview` to build an APK that can be installed from a link, or use `--profile production` to build an app bundle for Google Play.
+3. Add `--auto-submit` to a production build to upload it to Google Play when it is done. Google only accepts this after the app has been created in the Play Console and its first build has been uploaded there by hand.
 
 EAS signs release builds by appending to `android/app/build.gradle`, which is why that file is written in Groovy while the other Gradle files are written in Kotlin.
 
