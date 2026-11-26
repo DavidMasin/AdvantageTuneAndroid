@@ -179,6 +179,7 @@ private fun WorkspaceTopic(
         TopicDetailView(store = store, topic = topic, onBack = { workspace.close(name) })
       } else {
         // A pinned topic that the server has not announced, as before the app is connected
+        val isConnected = store.connectionStatus.isConnected
         Column(modifier = Modifier.fillMaxSize()) {
           InlineTitleBar(
             title = name.split("/").lastOrNull { it.isNotEmpty() } ?: name,
@@ -186,8 +187,13 @@ private fun WorkspaceTopic(
           )
           ContentUnavailableView(
             title = name,
-            icon = R.drawable.ic_public_off,
-            description = stringResource(R.string.not_connected),
+            icon = if (isConnected) R.drawable.ic_inbox else R.drawable.ic_public_off,
+            description =
+              if (isConnected) {
+                "The server does not publish this topic."
+              } else {
+                stringResource(R.string.not_connected)
+              },
           )
         }
       }

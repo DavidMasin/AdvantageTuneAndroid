@@ -43,7 +43,11 @@ jobs:
           # Closing the window ends the app and stores where the window was
           $window.CloseMainWindow() | Out-Null
           if (-not $window.WaitForExit(30000)) { throw "The app did not exit" }
-          Get-Content "$env:APPDATA/AdvantageTune/settings.properties"
+          $settings = Get-Content "$env:APPDATA/AdvantageTune/settings.properties"
+          $settings
+          if ($settings -notcontains "window_placement=maximized") {
+            throw "The window did not open maximized"
+          }
 
       - name: Upload installer
         uses: actions/upload-artifact@v6
