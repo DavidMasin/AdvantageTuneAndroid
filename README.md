@@ -62,11 +62,12 @@ The `desktop` directory contains a version of AdvantageTune for Windows, built w
 
 To build the installer, run `./gradlew packageMsi` in the `desktop` directory on Windows (this requires JDK 17 or later). The installer is written to `desktop/build/compose/binaries/main/msi` and contains its own Java runtime. `./gradlew run` starts the app without installing it, and `./gradlew test` runs the tests. Every push also builds the installer on GitHub Actions, where it can be downloaded from the artifacts of the "Build Desktop" workflow.
 
-The app is made for touch screens:
+The app is laid out for a computer screen and can be used with a mouse or a touch screen:
 
-- The first time it starts, the window opens maximized on the touch screen if there is one. After that it opens where it was when it was closed.
+- The window opens maximized, on the touch screen if there is one. After the first time, it opens where it was when it was closed.
+- In a wide window the lists stay on the left, and the topic that is selected opens next to them. Pin a topic to keep it open, and the next topic opens beside it, so several values can be edited side by side. Pinned topics are opened again the next time the app starts. A narrow window works like the phone app.
 - Lists scroll when they are dragged, rows on the Tuning tab are swiped to reveal their actions, and holding a finger on a row opens its menu (as does a right click).
-- F11 switches to full screen and back, and Escape goes back.
+- The button at the bottom of the tabs and F11 switch to full screen and back, and Escape goes back.
 - Windows does not open its touch keyboard for the text fields by itself. Tap the keyboard icon on the taskbar to type, or use the step buttons to change values.
 
 After changing `AdvantageTune/AppIcon.icon`, run `python3 desktop/tools/generate_icons.py` to regenerate the icon (this requires [Pillow](https://python-pillow.org)).

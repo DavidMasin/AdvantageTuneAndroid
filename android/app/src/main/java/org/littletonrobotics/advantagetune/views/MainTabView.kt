@@ -13,8 +13,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -90,8 +92,19 @@ class MainViewModel : ViewModel() {
   }
 }
 
+/** Width of the tab's content when a detail pane is shown next to it. */
+private val ListPaneWidth = 400.dp
+
+/**
+ * Shows the tabs. A wide window can show more than a phone does: `detailPane` is put next to the
+ * tab's content, which then is as wide as on a phone, and `railFooter` at the end of the tabs.
+ */
 @Composable
-fun MainTabView(viewModel: MainViewModel = viewModel()) {
+fun MainTabView(
+  viewModel: MainViewModel = viewModel(),
+  detailPane: (@Composable () -> Unit)? = null,
+  railFooter: (@Composable ColumnScope.() -> Unit)? = null,
+) {
   val store = viewModel.store
   val colors = AppTheme.colors
   var selectedTab by rememberSaveable { mutableStateOf(AppTab.Browse) }
@@ -164,11 +177,16 @@ fun MainTabView(viewModel: MainViewModel = viewModel()) {
                 ),
             )
           }
+
+          if (railFooter != null) {
+            Spacer(modifier = Modifier.weight(1f))
+            railFooter()
+          }
         }
 
         Box(modifier = Modifier.fillMaxHeight().width(0.5.dp).background(colors.separator))
 
-        Box(
+        Row(
           modifier =
             Modifier.weight(1f)
               .fillMaxHeight()
@@ -177,7 +195,14 @@ fun MainTabView(viewModel: MainViewModel = viewModel()) {
                 WindowInsets.safeDrawing.only(WindowInsetsSides.End + WindowInsetsSides.Bottom)
               )
         ) {
-          tabContent()
+          val contentWidth =
+            if (detailPane != null) Modifier.width(ListPaneWidth) else Modifier.weight(1f)
+          Box(modifier = contentWidth.fillMaxHeight()) { tabContent() }
+
+          if (detailPane != null) {
+            Box(modifier = Modifier.fillMaxHeight().width(0.5.dp).background(colors.separator))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) { detailPane() }
+          }
         }
       }
     } else {

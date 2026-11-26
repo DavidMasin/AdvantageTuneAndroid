@@ -12,10 +12,12 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.MouseInjectionScope
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
@@ -33,6 +35,7 @@ import org.junit.Test
 import org.littletonrobotics.advantagetune.models.TopicValue
 import org.littletonrobotics.advantagetune.views.MainViewModel
 import org.littletonrobotics.advantagetune.views.components.BackDispatcher
+import org.littletonrobotics.advantagetune.views.workspace.Workspace
 
 /**
  * Uses the app the way it is used on a touch screen, with the demo data. Windows delivers touches
@@ -41,6 +44,7 @@ import org.littletonrobotics.advantagetune.views.components.BackDispatcher
 @OptIn(ExperimentalTestApi::class)
 class DesktopAppTest {
   private val backDispatcher = BackDispatcher()
+  private val workspace = Workspace()
   private lateinit var defaultLocale: Locale
 
   @Before
@@ -57,7 +61,9 @@ class DesktopAppTest {
   private fun ComposeUiTest.launch(): MainViewModel {
     lateinit var viewModel: MainViewModel
     runOnUiThread { viewModel = MainViewModel() }
-    setContent { DesktopApp(viewModel = viewModel, backDispatcher = backDispatcher) }
+    setContent {
+      DesktopApp(viewModel = viewModel, backDispatcher = backDispatcher, workspace = workspace)
+    }
     runOnUiThread { viewModel.store.serverHost = "demo" }
     waitUntil(timeoutMillis = 10_000) { viewModel.store.topicTree.isNotEmpty() }
     waitForIdle()
@@ -117,6 +123,62 @@ class DesktopAppTest {
     // The Escape key goes back through this dispatcher
     navigateBack()
     onNodeWithText("Keys (6)").assertExists()
+  }
+
+  @Test
+  fun wideWindowOpensTopicsNextToLists() = runDesktopComposeUiTest(width = 1280, height = 800) {
+    launch()
+    click("Primitives")
+    click("Double")
+
+    // The list stays where it is, and the topic is shown next to it
+    assertTrue(isShown("Keys (6)"))
+    assertTrue(isShown("Topic Details"))
+    assertEquals(listOf("/Primitives/Double"), workspace.topics)
+
+    // The next topic takes its place
+    click("Integer")
+    assertEquals(listOf("/Primitives/Integer"), workspace.topics)
+
+    onNodeWithContentDescription("Close").performClick()
+    waitForIdle()
+    assertTrue(workspace.topics.isEmpty())
+    assertFalse(isShown("Topic Details"))
+  }
+
+  @Test
+  fun pinnedTopicsStayOpen() = runDesktopComposeUiTest(width = 1280, height = 800) {
+    val viewModel = launch()
+    click("Primitives")
+    click("Double")
+    onNodeWithContentDescription("Pin").performClick()
+    waitForIdle()
+    click("Integer")
+
+    assertEquals(listOf("/Primitives/Double", "/Primitives/Integer"), workspace.topics)
+    onAllNodesWithText("Topic Details").assertCountEquals(2)
+
+    // Both can be edited
+    click("+1.0")
+    click("+1")
+    runOnUiThread {
+      val values = viewModel.store.latestValues
+      assertEquals(TopicValue.DoubleValue(4.0), values["/Primitives/Double"])
+      assertEquals(TopicValue.IntValue(43), values["/Primitives/Integer"])
+    }
+
+    // The tabs do not change which topics are open
+    click("Search")
+    assertEquals(listOf("/Primitives/Double", "/Primitives/Integer"), workspace.topics)
+    onAllNodesWithText("Topic Details").assertCountEquals(2)
+
+    // Without the pin, both make room for the next topic
+    onNodeWithContentDescription("Unpin").performClick()
+    waitForIdle()
+    assertEquals(listOf("/Primitives/Double", "/Primitives/Integer"), workspace.topics)
+    click("Browse")
+    click("Float")
+    assertEquals(listOf("/Primitives/Float"), workspace.topics)
   }
 
   @Test

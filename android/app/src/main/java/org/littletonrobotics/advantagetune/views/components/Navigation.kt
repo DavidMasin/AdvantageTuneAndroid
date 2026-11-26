@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -54,7 +55,14 @@ class Navigator<T : Any> {
   val backStack = mutableStateListOf<Entry<T>>()
   private var nextId = 0L
 
+  /**
+   * Called with each destination before it is pushed. Returns true if the destination is shown
+   * somewhere else, as a wide window does with topics, and should not be pushed.
+   */
+  var interceptor: ((T) -> Boolean)? = null
+
   fun push(destination: T) {
+    if (interceptor?.invoke(destination) == true) return
     backStack.add(Entry(nextId++, backStack.size + 1, destination))
   }
 
@@ -150,6 +158,15 @@ fun LargeTitleBar(
   }
 }
 
+/**
+ * Replaces the back button of pushed views. A view that is shown in a pane of its own is closed
+ * there instead of being left.
+ */
+val LocalTitleBarLeading = compositionLocalOf<(@Composable (onBack: () -> Unit) -> Unit)?> { null }
+
+/** Adds buttons to the navigation bar of pushed views, after their own. */
+val LocalTitleBarActions = compositionLocalOf<(@Composable RowScope.() -> Unit)?> { null }
+
 /** The navigation bar of a pushed view, with a back button and a centered title. */
 @Composable
 fun InlineTitleBar(
@@ -158,13 +175,20 @@ fun InlineTitleBar(
   modifier: Modifier = Modifier,
   actions: @Composable RowScope.() -> Unit = {},
 ) {
+  val leading = LocalTitleBarLeading.current
+  val moreActions = LocalTitleBarActions.current
+
   Layout(
     content = {
-      BarButton(
-        icon = R.drawable.ic_arrow_back,
-        contentDescription = stringResource(R.string.back),
-        onClick = onBack,
-      )
+      if (leading != null) {
+        leading(onBack)
+      } else {
+        BarButton(
+          icon = R.drawable.ic_arrow_back,
+          contentDescription = stringResource(R.string.back),
+          onClick = onBack,
+        )
+      }
       Text(
         text = title,
         style = AppType.headline,
@@ -172,7 +196,10 @@ fun InlineTitleBar(
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
       )
-      Row(verticalAlignment = Alignment.CenterVertically, content = actions)
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        actions()
+        moreActions?.invoke(this)
+      }
     },
     modifier =
       modifier

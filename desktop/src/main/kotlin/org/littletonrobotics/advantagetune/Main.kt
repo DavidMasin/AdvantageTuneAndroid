@@ -9,6 +9,7 @@ package org.littletonrobotics.advantagetune
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
@@ -55,8 +56,13 @@ import org.littletonrobotics.advantagetune.views.components.AdvantageTuneTheme
 import org.littletonrobotics.advantagetune.views.components.AppTheme
 import org.littletonrobotics.advantagetune.views.components.AppType
 import org.littletonrobotics.advantagetune.views.components.BackDispatcher
+import org.littletonrobotics.advantagetune.views.components.DesktopIcons
+import org.littletonrobotics.advantagetune.views.components.IconBarButton
 import org.littletonrobotics.advantagetune.views.components.LocalBackDispatcher
 import org.littletonrobotics.advantagetune.views.components.LocalMessagePresenter
+import org.littletonrobotics.advantagetune.views.workspace.Workspace
+import org.littletonrobotics.advantagetune.views.workspace.WorkspaceNavigation
+import org.littletonrobotics.advantagetune.views.workspace.WorkspaceView
 
 fun main() {
   UserDefaults.initialize()
@@ -78,6 +84,17 @@ fun main() {
         }
     }
 
+    // Leaving full screen returns the window to how it was before
+    var placementBeforeFullscreen by remember { mutableStateOf(WindowPlacement.Maximized) }
+    val toggleFullscreen = {
+      if (windowState.placement == WindowPlacement.Fullscreen) {
+        windowState.placement = placementBeforeFullscreen
+      } else {
+        placementBeforeFullscreen = windowState.placement
+        windowState.placement = WindowPlacement.Fullscreen
+      }
+    }
+
     Window(
       onCloseRequest = {
         WindowPlacementStore.save(windowState)
@@ -92,12 +109,7 @@ fun main() {
         } else if (event.key == Key.Escape) {
           backDispatcher.navigateBack()
         } else if (event.key == Key.F11) {
-          windowState.placement =
-            if (windowState.placement == WindowPlacement.Fullscreen) {
-              WindowPlacement.Maximized
-            } else {
-              WindowPlacement.Fullscreen
-            }
+          toggleFullscreen()
           true
         } else {
           false
@@ -107,14 +119,28 @@ fun main() {
       window.minimumSize = Dimension(360, 480)
 
       val viewModel = remember { MainViewModel() }
-      DesktopApp(viewModel = viewModel, backDispatcher = backDispatcher)
+      DesktopApp(
+        viewModel = viewModel,
+        backDispatcher = backDispatcher,
+        isFullscreen = windowState.placement == WindowPlacement.Fullscreen,
+        onToggleFullscreen = toggleFullscreen,
+      )
     }
   }
 }
 
+// A window that is at least this wide shows the open topics next to the lists
+private val WideWindowWidth = 900.dp
+
 /** The content of the window. */
 @Composable
-fun DesktopApp(viewModel: MainViewModel, backDispatcher: BackDispatcher) {
+fun DesktopApp(
+  viewModel: MainViewModel,
+  backDispatcher: BackDispatcher,
+  workspace: Workspace = remember { Workspace() },
+  isFullscreen: Boolean = false,
+  onToggleFullscreen: (() -> Unit)? = null,
+) {
   var message by remember { mutableStateOf<String?>(null) }
   LaunchedEffect(message) {
     if (message != null) {
@@ -130,8 +156,33 @@ fun DesktopApp(viewModel: MainViewModel, backDispatcher: BackDispatcher) {
     LocalLayoutDirection provides if (isRightToLeft) LayoutDirection.Rtl else LayoutDirection.Ltr,
   ) {
     AdvantageTuneTheme {
-      Box(modifier = Modifier.fillMaxSize()) {
-        MainTabView(viewModel = viewModel)
+      BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isWide = maxWidth >= WideWindowWidth
+        WorkspaceNavigation(viewModel = viewModel, workspace = workspace, isEnabled = isWide)
+
+        MainTabView(
+          viewModel = viewModel,
+          detailPane =
+            if (isWide) {
+              { WorkspaceView(store = viewModel.store, workspace = workspace) }
+            } else {
+              null
+            },
+          railFooter =
+            onToggleFullscreen?.let { toggle ->
+              {
+                // A touch screen has no F11 key
+                IconBarButton(
+                  icon =
+                    if (isFullscreen) DesktopIcons.FullscreenExit else DesktopIcons.Fullscreen,
+                  contentDescription = if (isFullscreen) "Exit Full Screen" else "Full Screen",
+                  tint = AppTheme.colors.gray,
+                  modifier = Modifier.padding(bottom = 8.dp),
+                  onClick = toggle,
+                )
+              }
+            },
+        )
 
         message?.let { MessageView(text = it, modifier = Modifier.align(Alignment.BottomCenter)) }
       }
@@ -163,11 +214,12 @@ private object WindowPlacementStore {
   private const val widthKey = "window_width"
   private const val heightKey = "window_height"
 
-  private val defaultSize = DpSize(480.dp, 860.dp)
+  // Size of the window when it is not maximized
+  private val defaultSize = DpSize(1280.dp, 800.dp)
 
   /**
    * Returns where the window opens: where it was last time if that screen is still connected,
-   * otherwise maximized on the touch screen if there is one, otherwise centered.
+   * otherwise maximized, on the touch screen if there is one.
    */
   fun initialState(): WindowState {
     val x = UserDefaults.double(xKey)
@@ -191,31 +243,19 @@ private object WindowPlacementStore {
       }
     }
 
-    val touchScreen = TouchScreen.findBounds()
-    if (touchScreen != null) {
-      // A window is maximized on the screen that it is on, so it starts inside the touch screen
-      val width = minOf(defaultSize.width.value.toInt(), touchScreen.width)
-      val height = minOf(defaultSize.height.value.toInt(), touchScreen.height)
-      return WindowState(
-        placement = WindowPlacement.Maximized,
-        position =
-          WindowPosition(
-            (touchScreen.x + (touchScreen.width - width) / 2).dp,
-            (touchScreen.y + (touchScreen.height - height) / 2).dp,
-          ),
-        size = DpSize(width.dp, height.dp),
-      )
-    }
-
-    // The window has to fit next to the taskbar on a small screen
-    val available = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
+    // A window is maximized on the screen that it is on, so it starts inside the screen to use
+    val environment = GraphicsEnvironment.getLocalGraphicsEnvironment()
+    val screen = TouchScreen.findBounds() ?: environment.maximumWindowBounds
+    val fittingWidth = minOf(defaultSize.width.value.toInt(), screen.width)
+    val fittingHeight = minOf(defaultSize.height.value.toInt(), screen.height)
     return WindowState(
-      position = WindowPosition(Alignment.Center),
-      size =
-        DpSize(
-          minOf(defaultSize.width, available.width.dp),
-          minOf(defaultSize.height, available.height.dp),
+      placement = WindowPlacement.Maximized,
+      position =
+        WindowPosition(
+          (screen.x + (screen.width - fittingWidth) / 2).dp,
+          (screen.y + (screen.height - fittingHeight) / 2).dp,
         ),
+      size = DpSize(fittingWidth.dp, fittingHeight.dp),
     )
   }
 
