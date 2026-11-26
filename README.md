@@ -40,6 +40,15 @@ To build from the command line, run `./gradlew assembleDebug` in the `android` d
 
 Hostnames ending in `.local` (such as the default `robot.local`) can be resolved on Android 12 and later. On older versions of Android, enter the IP address of the server instead.
 
+### Building with EAS
+
+The Android app can also be built in the cloud with [EAS Build](https://docs.expo.dev/build/introduction/). The root of the repository is the EAS project (`app.json`, `eas.json` and `package.json`), and EAS builds the `android` directory with Gradle. The app is not written in React Native, so it cannot run in Expo Go and does not use EAS Update.
+
+1. Run `npx eas-cli@latest init` once to create the Expo project and save its ID in `app.json`.
+2. Run `npx eas-cli@latest build --platform android --profile preview` to build an APK that can be installed from a link, or use `--profile production` to build an app bundle for Google Play.
+
+EAS signs release builds by appending to `android/app/build.gradle`, which is why that file is written in Groovy while the other Gradle files are written in Kotlin.
+
 ### Shared Resources
 
 The text and the app icon of the Android app are generated from the iOS project. After changing `AdvantageTune/Localizable.xcstrings` or `AdvantageTune/AppIcon.icon`, regenerate them:
