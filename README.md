@@ -46,7 +46,7 @@ The Android app can also be built in the cloud with [EAS Build](https://docs.exp
 
 1. Run `npx eas-cli@latest init` once to create the Expo project and save its ID in `app.json`.
 2. Run `npx eas-cli@latest build --platform android --profile preview` to build an APK that can be installed from a link, or use `--profile production` to build an app bundle for Google Play.
-3. Add `--auto-submit` to a production build to upload it to Google Play when it is done. Google only accepts this after the app has been created in the Play Console and its first build has been uploaded there by hand.
+3. Add `--auto-submit` to a production build to upload it to Google Play when it is done. Google only accepts this after the app has been created in the Play Console and its first build has been uploaded there by hand. The build arrives as a draft release on the internal testing track, to be rolled out in the Play Console. Google accepts nothing else until the app has been published once; after that, `releaseStatus` can be removed from `eas.json` to roll out without the extra step.
 
 EAS signs release builds by appending to `android/app/build.gradle`, which is why that file is written in Groovy while the other Gradle files are written in Kotlin.
 
