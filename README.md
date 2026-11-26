@@ -50,6 +50,8 @@ The Android app can also be built in the cloud with [EAS Build](https://docs.exp
 
 EAS signs release builds by appending to `android/app/build.gradle`, which is why that file is written in Groovy while the other Gradle files are written in Kotlin.
 
+The build profiles in `eas.json` select the `latest` build image. EAS chooses the image from the version of Expo that a project uses, and for a project without Expo it falls back to an image whose Java is too old for Gradle.
+
 ### Shared Resources
 
 The text and the app icon of the Android app are generated from the iOS project. After changing `AdvantageTune/Localizable.xcstrings` or `AdvantageTune/AppIcon.icon`, regenerate them:
