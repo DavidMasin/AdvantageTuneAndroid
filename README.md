@@ -68,6 +68,6 @@ The app is laid out for a computer screen and can be used with a mouse or a touc
 - In a wide window the lists stay on the left, and the topic that is selected opens next to them. Pin a topic to keep it open, and the next topic opens beside it, so several values can be edited side by side. Pinned topics are opened again the next time the app starts. A narrow window works like the phone app.
 - Lists scroll when they are dragged, rows on the Tuning tab are swiped to reveal their actions, and holding a finger on a row opens its menu (as does a right click).
 - The button at the bottom of the tabs and F11 switch to full screen and back, and Escape goes back.
-- Windows does not open its touch keyboard for the text fields by itself. Tap the keyboard icon on the taskbar to type, or use the step buttons to change values.
+- Windows does not open its touch keyboard for the text fields of the app, so the app has its own: a number pad for values and letters for the server address, the search and text values. It is shown while a text field is being edited. The keyboard button at the bottom of the tabs turns it on and off, and it starts turned on if the computer has a touch screen.
 
 After changing `AdvantageTune/AppIcon.icon`, run `python3 desktop/tools/generate_icons.py` to regenerate the icon (this requires [Pillow](https://python-pillow.org)).

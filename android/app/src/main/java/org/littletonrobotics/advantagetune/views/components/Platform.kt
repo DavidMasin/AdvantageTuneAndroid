@@ -18,6 +18,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -118,3 +120,14 @@ fun Modifier.swipeGesture(
  */
 @Suppress("UNUSED_PARAMETER")
 fun Modifier.onSecondaryClick(onClick: (position: Offset) -> Unit): Modifier = this
+
+/**
+ * Lets a platform without a system keyboard for touch screens show its own while the text field
+ * is focused. Android shows the system's keyboard, so this does nothing here.
+ */
+@Suppress("UNUSED_PARAMETER")
+fun Modifier.screenKeyboard(
+  state: TextFieldState,
+  keyboardType: KeyboardType,
+  onSubmit: () -> Unit,
+): Modifier = this

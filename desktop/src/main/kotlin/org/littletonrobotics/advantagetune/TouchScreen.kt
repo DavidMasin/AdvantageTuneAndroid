@@ -48,12 +48,28 @@ object TouchScreen {
     @JvmField var productString: CharArray = CharArray(520)
   }
 
+  /** Whether the computer has a touch screen. */
+  val isPresent: Boolean by lazy {
+    if (!isWindows) {
+      false
+    } else {
+      try {
+        touchMonitorBounds() != null
+      } catch (e: Throwable) {
+        false
+      }
+    }
+  }
+
+  private val isWindows: Boolean
+    get() = System.getProperty("os.name").lowercase().contains("win")
+
   /**
    * Returns the bounds of the first touch screen in the coordinates that windows are placed in,
    * or null if there is none or it cannot be determined. Only Windows is supported.
    */
   fun findBounds(): Rectangle? {
-    if (!System.getProperty("os.name").lowercase().contains("win")) return null
+    if (!isWindows) return null
     return try {
       val monitor = touchMonitorBounds() ?: return null
       screenMatching(monitor)

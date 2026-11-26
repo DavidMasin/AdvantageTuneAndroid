@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.littletonrobotics.advantagetune.R
@@ -68,6 +69,7 @@ import org.littletonrobotics.advantagetune.views.components.Separator
 import org.littletonrobotics.advantagetune.views.components.TopicRowView
 import org.littletonrobotics.advantagetune.views.components.dragToScroll
 import org.littletonrobotics.advantagetune.views.components.painterResource
+import org.littletonrobotics.advantagetune.views.components.screenKeyboard
 import org.littletonrobotics.advantagetune.views.components.section
 import org.littletonrobotics.advantagetune.views.components.stringResource
 import org.littletonrobotics.advantagetune.views.components.weight
@@ -234,7 +236,10 @@ private fun SearchField(
 
     BasicTextField(
       state = state,
-      modifier = Modifier.weight(1f).focusRequester(focusRequester),
+      modifier =
+        Modifier.weight(1f)
+          .focusRequester(focusRequester)
+          .screenKeyboard(state, KeyboardType.Text) { focusManager.clearFocus() },
       textStyle = AppType.body.copy(color = colors.label, textAlign = AppType.leadingAlignment),
       lineLimits = TextFieldLineLimits.SingleLine,
       cursorBrush = SolidColor(colors.accent),

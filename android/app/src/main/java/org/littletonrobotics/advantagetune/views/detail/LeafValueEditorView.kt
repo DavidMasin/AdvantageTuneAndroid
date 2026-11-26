@@ -75,6 +75,7 @@ import org.littletonrobotics.advantagetune.views.components.Menu
 import org.littletonrobotics.advantagetune.views.components.TextBadge
 import org.littletonrobotics.advantagetune.views.components.monospaced
 import org.littletonrobotics.advantagetune.views.components.painterResource
+import org.littletonrobotics.advantagetune.views.components.screenKeyboard
 import org.littletonrobotics.advantagetune.views.components.stringResource
 import org.littletonrobotics.advantagetune.views.components.weight
 
@@ -122,7 +123,10 @@ private fun LeafTextField(
 
   BasicTextField(
     state = state,
-    modifier = Modifier.fillMaxWidth().onFocusChanged { onFocusChanged(it.isFocused) },
+    modifier =
+      Modifier.fillMaxWidth()
+        .onFocusChanged { onFocusChanged(it.isFocused) }
+        .screenKeyboard(state, keyboardType, onSubmit),
     textStyle = textStyle.copy(color = colors.label, textAlign = AppType.trailingAlignment),
     lineLimits = TextFieldLineLimits.SingleLine,
     cursorBrush = SolidColor(colors.accent),

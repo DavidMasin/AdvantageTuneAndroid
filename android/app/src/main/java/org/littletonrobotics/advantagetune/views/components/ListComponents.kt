@@ -134,6 +134,7 @@ fun ListRow(
   indent: Dp = 0.dp,
   separatorInset: Dp = RowHorizontalPadding,
   showsChevron: Boolean = false,
+  isSelected: Boolean = false,
   onClick: (() -> Unit)? = null,
   contextMenu: RowContextMenu? = null,
   content: @Composable () -> Unit,
@@ -150,6 +151,7 @@ fun ListRow(
       .padding(horizontal = ListHorizontalMargin)
       .clip(position.shape())
       .background(colors.secondarySystemGroupedBackground)
+      .background(if (isSelected) colors.accent.copy(alpha = 0.14f) else Color.Transparent)
 
   if (contextMenu != null) {
     rowModifier =

@@ -66,6 +66,7 @@ import org.littletonrobotics.advantagetune.views.components.Haptics
 import org.littletonrobotics.advantagetune.views.components.InsetGroupedList
 import org.littletonrobotics.advantagetune.views.components.LargeTitleBar
 import org.littletonrobotics.advantagetune.views.components.ListRow
+import org.littletonrobotics.advantagetune.views.components.LocalOpenTopics
 import org.littletonrobotics.advantagetune.views.components.Menu
 import org.littletonrobotics.advantagetune.views.components.MenuItem
 import org.littletonrobotics.advantagetune.views.components.NavigationStack
@@ -239,6 +240,7 @@ private fun TunedEntryRow(
     ListRow(
       position = position,
       showsChevron = true,
+      isSelected = topic.name in LocalOpenTopics.current,
       onClick = onClick,
       contextMenu = { expanded, onDismiss, offset ->
         TopicContextMenu(expanded, onDismiss, offset, store = store, topic = topic, value = displayValue)

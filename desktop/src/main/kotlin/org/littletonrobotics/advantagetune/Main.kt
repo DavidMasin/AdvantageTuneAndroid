@@ -10,7 +10,11 @@ package org.littletonrobotics.advantagetune
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -60,6 +64,10 @@ import org.littletonrobotics.advantagetune.views.components.DesktopIcons
 import org.littletonrobotics.advantagetune.views.components.IconBarButton
 import org.littletonrobotics.advantagetune.views.components.LocalBackDispatcher
 import org.littletonrobotics.advantagetune.views.components.LocalMessagePresenter
+import org.littletonrobotics.advantagetune.views.components.LocalOpenTopics
+import org.littletonrobotics.advantagetune.views.keyboard.LocalScreenKeyboard
+import org.littletonrobotics.advantagetune.views.keyboard.ScreenKeyboard
+import org.littletonrobotics.advantagetune.views.keyboard.ScreenKeyboardView
 import org.littletonrobotics.advantagetune.views.workspace.Workspace
 import org.littletonrobotics.advantagetune.views.workspace.WorkspaceNavigation
 import org.littletonrobotics.advantagetune.views.workspace.WorkspaceView
@@ -138,6 +146,7 @@ fun DesktopApp(
   viewModel: MainViewModel,
   backDispatcher: BackDispatcher,
   workspace: Workspace = remember { Workspace() },
+  keyboard: ScreenKeyboard = remember { ScreenKeyboard() },
   isFullscreen: Boolean = false,
   onToggleFullscreen: (() -> Unit)? = null,
 ) {
@@ -153,38 +162,58 @@ fun DesktopApp(
   CompositionLocalProvider(
     LocalBackDispatcher provides backDispatcher,
     LocalMessagePresenter provides { text -> message = text },
+    LocalScreenKeyboard provides keyboard,
     LocalLayoutDirection provides if (isRightToLeft) LayoutDirection.Rtl else LayoutDirection.Ltr,
   ) {
     AdvantageTuneTheme {
-      BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val isWide = maxWidth >= WideWindowWidth
-        WorkspaceNavigation(viewModel = viewModel, workspace = workspace, isEnabled = isWide)
+      Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.systemBackground)) {
+        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
+          val isWide = maxWidth >= WideWindowWidth
+          WorkspaceNavigation(viewModel = viewModel, workspace = workspace, isEnabled = isWide)
 
-        MainTabView(
-          viewModel = viewModel,
-          detailPane =
-            if (isWide) {
-              { WorkspaceView(store = viewModel.store, workspace = workspace) }
-            } else {
-              null
-            },
-          railFooter =
-            onToggleFullscreen?.let { toggle ->
-              {
-                // A touch screen has no F11 key
+          // The rows of the open topics are highlighted while the topics are shown
+          val openTopics = if (isWide) workspace.topics.toSet() else emptySet()
+          CompositionLocalProvider(LocalOpenTopics provides openTopics) {
+            MainTabView(
+              viewModel = viewModel,
+              detailPane =
+                if (isWide) {
+                  { WorkspaceView(store = viewModel.store, workspace = workspace) }
+                } else {
+                  null
+                },
+              railFooter = {
                 IconBarButton(
-                  icon =
-                    if (isFullscreen) DesktopIcons.FullscreenExit else DesktopIcons.Fullscreen,
-                  contentDescription = if (isFullscreen) "Exit Full Screen" else "Full Screen",
-                  tint = AppTheme.colors.gray,
-                  modifier = Modifier.padding(bottom = 8.dp),
-                  onClick = toggle,
+                  icon = DesktopIcons.Keyboard,
+                  contentDescription =
+                    if (keyboard.isEnabled) "Hide On-Screen Keyboard"
+                    else "Show On-Screen Keyboard",
+                  tint = if (keyboard.isEnabled) AppTheme.colors.accent else AppTheme.colors.gray,
+                  onClick = { keyboard.toggle() },
                 )
-              }
-            },
-        )
 
-        message?.let { MessageView(text = it, modifier = Modifier.align(Alignment.BottomCenter)) }
+                // A touch screen has no F11 key
+                if (onToggleFullscreen != null) {
+                  IconBarButton(
+                    icon =
+                      if (isFullscreen) DesktopIcons.FullscreenExit else DesktopIcons.Fullscreen,
+                    contentDescription = if (isFullscreen) "Exit Full Screen" else "Full Screen",
+                    tint = AppTheme.colors.gray,
+                    onClick = onToggleFullscreen,
+                  )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+              },
+            )
+          }
+
+          message?.let {
+            MessageView(text = it, modifier = Modifier.align(Alignment.BottomCenter))
+          }
+        }
+
+        ScreenKeyboardView(keyboard = keyboard)
       }
     }
   }

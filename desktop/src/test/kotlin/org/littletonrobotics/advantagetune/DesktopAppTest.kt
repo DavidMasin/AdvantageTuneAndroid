@@ -13,11 +13,13 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.MouseInjectionScope
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
@@ -35,6 +37,7 @@ import org.junit.Test
 import org.littletonrobotics.advantagetune.models.TopicValue
 import org.littletonrobotics.advantagetune.views.MainViewModel
 import org.littletonrobotics.advantagetune.views.components.BackDispatcher
+import org.littletonrobotics.advantagetune.views.keyboard.ScreenKeyboard
 import org.littletonrobotics.advantagetune.views.workspace.Workspace
 
 /**
@@ -45,6 +48,7 @@ import org.littletonrobotics.advantagetune.views.workspace.Workspace
 class DesktopAppTest {
   private val backDispatcher = BackDispatcher()
   private val workspace = Workspace()
+  private val keyboard = ScreenKeyboard()
   private lateinit var defaultLocale: Locale
 
   @Before
@@ -62,7 +66,12 @@ class DesktopAppTest {
     lateinit var viewModel: MainViewModel
     runOnUiThread { viewModel = MainViewModel() }
     setContent {
-      DesktopApp(viewModel = viewModel, backDispatcher = backDispatcher, workspace = workspace)
+      DesktopApp(
+        viewModel = viewModel,
+        backDispatcher = backDispatcher,
+        workspace = workspace,
+        keyboard = keyboard,
+      )
     }
     runOnUiThread { viewModel.store.serverHost = "demo" }
     waitUntil(timeoutMillis = 10_000) { viewModel.store.topicTree.isNotEmpty() }
@@ -87,6 +96,11 @@ class DesktopAppTest {
     } catch (e: AssertionError) {
       false
     }
+  }
+
+  private fun ComposeUiTest.pressKey(key: String) {
+    onNodeWithTag("key-$key").performClick()
+    waitForIdle()
   }
 
   /** Drags a node the way a finger does, in many small steps. */
@@ -196,6 +210,50 @@ class DesktopAppTest {
       val value = viewModel.store.latestValues["/Structs/MotorConfig"]?.formattedString
       assertTrue(value, value!!.startsWith("{targetVelocity: -12.5,"))
     }
+  }
+
+  @Test
+  fun numberPadTypesIntoValueFields() = runDesktopComposeUiTest(width = 1280, height = 800) {
+    val viewModel = launch()
+    click("Primitives")
+    click("Double")
+
+    // The keyboard is off until the user turns it on, unless there is a touch screen
+    val field = onAllNodes(hasSetTextAction())[0]
+    field.performClick()
+    waitForIdle()
+    onNodeWithTag("key-done").assertDoesNotExist()
+
+    onNodeWithContentDescription("Show On-Screen Keyboard").performClick()
+    waitForIdle()
+    field.performClick()
+    waitForIdle()
+
+    for (key in listOf("clear", "1", "2", ".", "5", "9", "backspace", "sign")) {
+      pressKey(key)
+    }
+    field.assertTextEquals("-12.5")
+    pressKey("done")
+
+    runOnUiThread {
+      val value = viewModel.store.latestValues["/Primitives/Double"]
+      assertEquals(TopicValue.DoubleValue(-12.5), value)
+    }
+    onNodeWithTag("key-done").assertDoesNotExist()
+  }
+
+  @Test
+  fun textKeysTypeIntoHostField() = runDesktopComposeUiTest(width = 1280, height = 800) {
+    val viewModel = launch()
+    runOnUiThread { keyboard.toggle() }
+
+    onAllNodes(hasSetTextAction())[0].performClick()
+    waitForIdle()
+    for (key in listOf("clear", "shift", "r", "i", "o", "-", "1", ".", "l")) {
+      pressKey(key)
+    }
+
+    runOnUiThread { assertEquals("Rio-1.l", viewModel.store.serverHost) }
   }
 
   @Test

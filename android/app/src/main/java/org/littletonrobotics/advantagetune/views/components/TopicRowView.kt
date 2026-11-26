@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +25,12 @@ import androidx.compose.ui.unit.dp
 import org.littletonrobotics.advantagetune.R
 import org.littletonrobotics.advantagetune.models.NT4Topic
 import org.littletonrobotics.advantagetune.store.NTStore
+
+/**
+ * Names of the topics that are shown next to the lists, as in a wide window on desktop. Their
+ * rows are highlighted.
+ */
+val LocalOpenTopics = compositionLocalOf<Set<String>> { emptySet() }
 
 /** A list row showing a topic and its live value. */
 @Composable
@@ -52,6 +59,7 @@ fun TopicRowView(
     indent = indent,
     separatorInset = 16.dp + 22.dp + 10.dp,
     showsChevron = onClick != null,
+    isSelected = onClick != null && topic.name in LocalOpenTopics.current,
     onClick = onClick,
     contextMenu = { expanded, onDismiss, offset ->
       TopicContextMenu(expanded, onDismiss, offset, store = store, topic = topic, value = liveValue)

@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -22,6 +23,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -36,6 +38,7 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import java.awt.Toolkit
@@ -47,6 +50,8 @@ import kotlin.math.abs
 import kotlin.math.sign
 import kotlinx.coroutines.launch
 import org.littletonrobotics.advantagetune.Resources
+import org.littletonrobotics.advantagetune.views.keyboard.KeyboardTarget
+import org.littletonrobotics.advantagetune.views.keyboard.LocalScreenKeyboard
 
 // The views are shared with the Android app. This file holds what they need from the platform, as
 // implemented on desktop.
@@ -245,6 +250,37 @@ fun Modifier.swipeGesture(
     onDelta = onDelta,
     onStopped = { velocity -> scope.launch { onStopped(velocity) } },
   )
+}
+
+/** Shows the app's own keyboard while the text field is focused, if the user has it turned on. */
+fun Modifier.screenKeyboard(
+  state: TextFieldState,
+  keyboardType: KeyboardType,
+  onSubmit: () -> Unit,
+): Modifier = composed {
+  val keyboard = LocalScreenKeyboard.current ?: return@composed this
+  val currentOnSubmit by rememberUpdatedState(onSubmit)
+  val isNumeric =
+    keyboardType == KeyboardType.Ascii ||
+      keyboardType == KeyboardType.Number ||
+      keyboardType == KeyboardType.Decimal
+  val target = remember(state, isNumeric) { KeyboardTarget(state, isNumeric) { currentOnSubmit() } }
+
+  DisposableEffect(keyboard, target) {
+    onDispose {
+      if (keyboard.target === target) {
+        keyboard.target = null
+      }
+    }
+  }
+
+  onFocusChanged { focus ->
+    if (focus.isFocused) {
+      keyboard.target = target
+    } else if (keyboard.target === target) {
+      keyboard.target = null
+    }
+  }
 }
 
 /**

@@ -75,6 +75,12 @@ fun ConnectionBar(store: NTStore, modifier: Modifier = Modifier) {
     snapshotFlow { hostFieldState.text.toString() }.collect { commitHost() }
   }
 
+  val submitHost = {
+    focusManager.clearFocus()
+    commitHost()
+    store.reconnect()
+  }
+
   Column(
     modifier =
       modifier
@@ -107,7 +113,8 @@ fun ConnectionBar(store: NTStore, modifier: Modifier = Modifier) {
 
         BasicTextField(
           state = hostFieldState,
-          modifier = Modifier.weight(1f),
+          modifier =
+            Modifier.weight(1f).screenKeyboard(hostFieldState, KeyboardType.Uri, submitHost),
           textStyle = AppType.body.copy(color = colors.label, textAlign = AppType.leadingAlignment),
           lineLimits = TextFieldLineLimits.SingleLine,
           cursorBrush = SolidColor(colors.accent),
@@ -118,11 +125,7 @@ fun ConnectionBar(store: NTStore, modifier: Modifier = Modifier) {
               keyboardType = KeyboardType.Uri,
               imeAction = ImeAction.Done,
             ),
-          onKeyboardAction = {
-            focusManager.clearFocus()
-            commitHost()
-            store.reconnect()
-          },
+          onKeyboardAction = { submitHost() },
           decorator = { innerTextField ->
             Box {
               if (hostFieldState.text.isEmpty()) {

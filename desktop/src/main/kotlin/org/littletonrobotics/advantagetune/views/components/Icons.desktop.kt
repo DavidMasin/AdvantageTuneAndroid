@@ -68,6 +68,29 @@ object DesktopIcons {
     )
   }
 
+  val Keyboard: ImageVector by lazy {
+    icon(
+      "Keyboard",
+      "M20,5H4C2.9,5,2.01,5.9,2.01,7L2,17c0,1.1,0.9,2,2,2h16c1.1,0,2,-0.9,2,-2V7" +
+        "C22,5.9,21.1,5,20,5z M11,8h2v2h-2V8z M11,11h2v2h-2V11z M8,8h2v2H8V8z M8,11h2v2H8V11z " +
+        "M7,13H5v-2h2V13z M7,10H5V8h2V10z M16,17H8v-2h8V17z M16,13h-2v-2h2V13z M16,10h-2V8h2V10z " +
+        "M19,13h-2v-2h2V13z M19,10h-2V8h2V10z",
+    )
+  }
+
+  val Backspace: ImageVector by lazy {
+    icon(
+      "Backspace",
+      "M22,3H7C6.31,3,5.77,3.35,5.41,3.88L0,12l5.41,8.11C5.77,20.64,6.31,21,7,21h15" +
+        "c1.1,0,2,-0.9,2,-2V5C24,3.9,23.1,3,22,3z M19,15.59L17.59,17L14,13.41L10.41,17L9,15.59" +
+        "L12.59,12L9,8.41L10.41,7L14,10.59L17.59,7L19,8.41L15.41,12L19,15.59z",
+    )
+  }
+
+  val Shift: ImageVector by lazy {
+    icon("Shift", "M4,12l1.41,1.41L11,7.83V20h2V7.83l5.58,5.59L20,12l-8,-8L4,12z")
+  }
+
   private fun icon(name: String, pathData: String): ImageVector {
     return ImageVector.Builder(
         name = name,
