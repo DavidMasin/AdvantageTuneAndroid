@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -54,7 +55,6 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -114,7 +114,11 @@ fun InsetGroupedList(
   content: LazyListScope.() -> Unit,
 ) {
   LazyColumn(
-    modifier = modifier.fillMaxSize().background(AppTheme.colors.systemGroupedBackground),
+    modifier =
+      modifier
+        .fillMaxSize()
+        .background(AppTheme.colors.systemGroupedBackground)
+        .dragToScroll(state, Orientation.Vertical),
     state = state,
     contentPadding = PaddingValues(bottom = 24.dp),
     content = content,
@@ -151,6 +155,10 @@ fun ListRow(
     rowModifier =
       rowModifier
         .onSizeChanged { rowHeight = it.height }
+        .onSecondaryClick { position ->
+          pressPosition = position
+          menuExpanded = true
+        }
         .pointerInput(Unit) {
           awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)

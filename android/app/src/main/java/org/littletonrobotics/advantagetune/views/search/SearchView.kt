@@ -10,6 +10,7 @@ package org.littletonrobotics.advantagetune.views.search
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,8 +47,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -67,7 +66,10 @@ import org.littletonrobotics.advantagetune.views.components.NavigationStack
 import org.littletonrobotics.advantagetune.views.components.Navigator
 import org.littletonrobotics.advantagetune.views.components.Separator
 import org.littletonrobotics.advantagetune.views.components.TopicRowView
+import org.littletonrobotics.advantagetune.views.components.dragToScroll
+import org.littletonrobotics.advantagetune.views.components.painterResource
 import org.littletonrobotics.advantagetune.views.components.section
+import org.littletonrobotics.advantagetune.views.components.stringResource
 import org.littletonrobotics.advantagetune.views.components.weight
 import org.littletonrobotics.advantagetune.views.detail.TopicDetailView
 
@@ -131,11 +133,13 @@ fun SearchView(store: NTStore, navigator: Navigator<NT4Topic>, activation: Int =
         Separator()
 
         // Filter picker
+        val filterScrollState = rememberScrollState()
         Row(
           modifier =
             Modifier.fillMaxWidth()
               .background(colors.systemBackground)
-              .horizontalScroll(rememberScrollState())
+              .dragToScroll(filterScrollState, Orientation.Horizontal)
+              .horizontalScroll(filterScrollState)
               .padding(horizontal = 16.dp, vertical = 8.dp),
           horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {

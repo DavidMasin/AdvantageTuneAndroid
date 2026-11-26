@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import org.littletonrobotics.advantagetune.R
 import org.littletonrobotics.advantagetune.models.TopicNode
 import org.littletonrobotics.advantagetune.store.NTStore
@@ -21,6 +20,7 @@ import org.littletonrobotics.advantagetune.views.components.LargeTitleBar
 import org.littletonrobotics.advantagetune.views.components.NavigationStack
 import org.littletonrobotics.advantagetune.views.components.Navigator
 import org.littletonrobotics.advantagetune.views.components.Separator
+import org.littletonrobotics.advantagetune.views.components.stringResource
 import org.littletonrobotics.advantagetune.views.detail.TopicDetailView
 
 @Composable

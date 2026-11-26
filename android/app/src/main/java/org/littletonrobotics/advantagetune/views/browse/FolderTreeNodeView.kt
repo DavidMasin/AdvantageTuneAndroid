@@ -28,8 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -45,6 +43,8 @@ import org.littletonrobotics.advantagetune.views.components.DisclosureIndicator
 import org.littletonrobotics.advantagetune.views.components.ListRow
 import org.littletonrobotics.advantagetune.views.components.RowPosition
 import org.littletonrobotics.advantagetune.views.components.TextBadge
+import org.littletonrobotics.advantagetune.views.components.painterResource
+import org.littletonrobotics.advantagetune.views.components.stringResource
 import org.littletonrobotics.advantagetune.views.components.weight
 
 /**

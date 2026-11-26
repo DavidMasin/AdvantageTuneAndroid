@@ -25,8 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
@@ -34,6 +32,8 @@ import org.littletonrobotics.advantagetune.R
 import org.littletonrobotics.advantagetune.views.components.AppTheme
 import org.littletonrobotics.advantagetune.views.components.AppType
 import org.littletonrobotics.advantagetune.views.components.Haptics
+import org.littletonrobotics.advantagetune.views.components.painterResource
+import org.littletonrobotics.advantagetune.views.components.stringResource
 
 @Composable
 fun LeafEditorContainer(

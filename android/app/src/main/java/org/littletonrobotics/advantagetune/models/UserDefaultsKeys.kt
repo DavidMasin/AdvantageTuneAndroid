@@ -7,35 +7,9 @@
 
 package org.littletonrobotics.advantagetune.models
 
-import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
-
 object UserDefaultsKeys {
   const val serverHost = "server_host"
   const val defaultStepSize = "default_step_size"
 
   fun stepSize(topicPath: String): String = "step_size_$topicPath"
-}
-
-/** Persistent key-value storage, the counterpart of `UserDefaults.standard` on iOS. */
-object UserDefaults {
-  private var preferences: SharedPreferences? = null
-
-  fun initialize(context: Context) {
-    preferences =
-      context.applicationContext.getSharedPreferences("AdvantageTune", Context.MODE_PRIVATE)
-  }
-
-  fun string(key: String): String? = preferences?.getString(key, null)
-
-  fun double(key: String): Double? = preferences?.getString(key, null)?.toDoubleOrNull()
-
-  fun set(value: String, key: String) {
-    preferences?.edit { putString(key, value) }
-  }
-
-  fun set(value: Double, key: String) {
-    preferences?.edit { putString(key, value.toString()) }
-  }
 }

@@ -7,16 +7,10 @@
 
 package org.littletonrobotics.advantagetune.views.tuning
 
-import android.content.Context
-import android.content.Intent
-import android.text.format.DateFormat
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,11 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,9 +48,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -87,14 +75,19 @@ import org.littletonrobotics.advantagetune.views.components.Separator
 import org.littletonrobotics.advantagetune.views.components.TextBadge
 import org.littletonrobotics.advantagetune.views.components.TopicContextMenu
 import org.littletonrobotics.advantagetune.views.components.monospaced
+import org.littletonrobotics.advantagetune.views.components.painterResource
+import org.littletonrobotics.advantagetune.views.components.rememberShareAction
+import org.littletonrobotics.advantagetune.views.components.rememberTimeFormatter
 import org.littletonrobotics.advantagetune.views.components.section
 import org.littletonrobotics.advantagetune.views.components.shape
+import org.littletonrobotics.advantagetune.views.components.stringResource
+import org.littletonrobotics.advantagetune.views.components.swipeGesture
 import org.littletonrobotics.advantagetune.views.components.weight
 import org.littletonrobotics.advantagetune.views.detail.TopicDetailView
 
 @Composable
 fun TuningView(store: NTStore, navigator: Navigator<NT4Topic>) {
-  val context = LocalContext.current
+  val share = rememberShareAction()
 
   NavigationStack(
     navigator = navigator,
@@ -111,7 +104,7 @@ fun TuningView(store: NTStore, navigator: Navigator<NT4Topic>) {
             BarButton(
               icon = R.drawable.ic_share,
               contentDescription = stringResource(R.string.share),
-              onClick = { share(context, formattedShareText(entries)) },
+              onClick = { share(formattedShareText(entries)) },
             )
 
             Box {
@@ -198,22 +191,6 @@ private fun formattedShareText(entries: List<TunedEntry>): String {
   return lines.joinToString("\n")
 }
 
-private fun share(context: Context, text: String) {
-  val intent =
-    Intent(Intent.ACTION_SEND).apply {
-      type = "text/plain"
-      putExtra(Intent.EXTRA_TEXT, text)
-    }
-  context.startActivity(Intent.createChooser(intent, null))
-}
-
-/** The time of day with seconds, honoring the system's 24-hour setting. */
-private fun formatTime(context: Context, date: Date): String {
-  val locale = Locale.getDefault()
-  val skeleton = if (DateFormat.is24HourFormat(context)) "Hms" else "hms"
-  return SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, skeleton), locale).format(date)
-}
-
 @Composable
 private fun TunedEntryRow(
   store: NTStore,
@@ -223,7 +200,7 @@ private fun TunedEntryRow(
   onClick: () -> Unit,
 ) {
   val colors = AppTheme.colors
-  val context = LocalContext.current
+  val formatTime = rememberTimeFormatter()
   val displayValue =
     if (store.connectionStatus.isConnected) {
       store.latestValues[entry.topicPath] ?: entry.currentValue
@@ -307,7 +284,7 @@ private fun TunedEntryRow(
           )
 
           Text(
-            text = formatTime(context, entry.lastModified),
+            text = formatTime(entry.lastModified),
             style = AppType.caption2,
             color = colors.secondaryLabel,
             maxLines = 1,
@@ -403,16 +380,14 @@ private fun SwipeActionsRow(
     Box(
       modifier =
         Modifier.offset { IntOffset(-pull.value.roundToInt(), 0) }
-          .draggable(
-            orientation = Orientation.Horizontal,
-            state =
-              rememberDraggableState { delta ->
-                val towardsLeading = if (isRtl) delta else -delta
-                scope.launch {
-                  pull.snapTo((pull.value + towardsLeading).coerceIn(0f, rowWidth.toFloat()))
-                }
-              },
-            onDragStopped = { velocity ->
+          .swipeGesture(
+            onDelta = { delta ->
+              val towardsLeading = if (isRtl) delta else -delta
+              scope.launch {
+                pull.snapTo((pull.value + towardsLeading).coerceIn(0f, rowWidth.toFloat()))
+              }
+            },
+            onStopped = { velocity ->
               val towardsLeading = if (isRtl) velocity else -velocity
               if (pull.value > fullSwipeThreshold && fullSwipeThreshold > actionsWidth) {
                 pull.animateTo(rowWidth.toFloat())

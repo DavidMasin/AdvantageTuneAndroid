@@ -49,8 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -65,6 +63,8 @@ import org.littletonrobotics.advantagetune.views.components.AppTheme
 import org.littletonrobotics.advantagetune.views.components.Haptics
 import org.littletonrobotics.advantagetune.views.components.Navigator
 import org.littletonrobotics.advantagetune.views.components.Separator
+import org.littletonrobotics.advantagetune.views.components.painterResource
+import org.littletonrobotics.advantagetune.views.components.stringResource
 import org.littletonrobotics.advantagetune.views.search.SearchView
 import org.littletonrobotics.advantagetune.views.tuning.TuningView
 

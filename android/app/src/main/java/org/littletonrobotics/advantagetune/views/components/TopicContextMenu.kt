@@ -7,14 +7,9 @@
 
 package org.littletonrobotics.advantagetune.views.components
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
 import okio.ByteString
 import org.littletonrobotics.advantagetune.R
@@ -35,7 +30,7 @@ fun TopicContextMenu(
   value: TopicValue? = null,
   rawData: ByteString? = null,
 ) {
-  val context = LocalContext.current
+  val copyToClipboard = rememberClipboardCopy()
   val resolvedName = topic?.name ?: topicName ?: ""
 
   if (expanded) {
@@ -87,27 +82,22 @@ fun TopicContextMenu(
     if (rawData != null) {
       MenuItem(title = stringResource(R.string.copy_value), icon = R.drawable.ic_content_paste) {
         onDismiss()
-        copyToClipboard(context, rawData.hexString)
+        copyToClipboard(rawData.hexString)
       }
     } else if (value != null) {
       MenuItem(title = stringResource(R.string.copy_value), icon = R.drawable.ic_content_paste) {
         onDismiss()
-        copyToClipboard(context, value.fullString)
+        copyToClipboard(value.fullString)
       }
     }
 
     if (resolvedName.isNotEmpty()) {
       MenuItem(title = stringResource(R.string.copy_key), icon = R.drawable.ic_content_copy) {
         onDismiss()
-        copyToClipboard(context, resolvedName)
+        copyToClipboard(resolvedName)
       }
     }
   }
-}
-
-private fun copyToClipboard(context: Context, text: String) {
-  val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-  clipboard.setPrimaryClip(ClipData.newPlainText(null, text))
 }
 
 private fun zeroedValue(value: TopicValue?, topic: NT4Topic): TopicValue? {

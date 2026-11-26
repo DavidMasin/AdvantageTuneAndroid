@@ -49,8 +49,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -76,6 +74,8 @@ import org.littletonrobotics.advantagetune.views.components.ListSectionScope
 import org.littletonrobotics.advantagetune.views.components.Menu
 import org.littletonrobotics.advantagetune.views.components.TextBadge
 import org.littletonrobotics.advantagetune.views.components.monospaced
+import org.littletonrobotics.advantagetune.views.components.painterResource
+import org.littletonrobotics.advantagetune.views.components.stringResource
 import org.littletonrobotics.advantagetune.views.components.weight
 
 // MARK: - Formatted Text Field

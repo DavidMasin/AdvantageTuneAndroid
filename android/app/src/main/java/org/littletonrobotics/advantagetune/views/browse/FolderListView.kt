@@ -16,7 +16,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.littletonrobotics.advantagetune.R
 import org.littletonrobotics.advantagetune.models.TopicNode
@@ -29,6 +28,7 @@ import org.littletonrobotics.advantagetune.views.components.InsetGroupedList
 import org.littletonrobotics.advantagetune.views.components.Navigator
 import org.littletonrobotics.advantagetune.views.components.TopicRowView
 import org.littletonrobotics.advantagetune.views.components.section
+import org.littletonrobotics.advantagetune.views.components.stringResource
 
 /** A row of the flattened tree of tables shown by [FolderListView]. */
 private sealed class TreeRow {
