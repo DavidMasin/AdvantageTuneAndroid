@@ -27,3 +27,22 @@ AdvantageTune uses Apple's `swift-format` tool (bundled with Xcode) for code for
 
 - Run `./format.sh` to automatically format all Swift files in-place.
 - Run `./format.sh --check` to verify that all Swift files are properly formatted (this check runs automatically in CI).
+
+## Android
+
+The `android` directory contains a version of AdvantageTune for Android phones and tablets, built with Kotlin and Jetpack Compose. It mirrors the iOS app: every Swift file under `AdvantageTune` has a Kotlin counterpart with the same name under `android/app/src/main/java/org/littletonrobotics/advantagetune`, so a change to one app can be carried over to the other.
+
+1. Open the `android` directory in Android Studio.
+2. Select the `app` configuration and choose an emulator or a connected device running Android 8.0 or later.
+3. Build and run.
+
+To build from the command line, run `./gradlew assembleDebug` in the `android` directory (this requires JDK 17 or later and the Android SDK). The unit tests run with `./gradlew testDebugUnitTest`.
+
+Hostnames ending in `.local` (such as the default `robot.local`) can be resolved on Android 12 and later. On older versions of Android, enter the IP address of the server instead.
+
+### Shared Resources
+
+The text and the app icon of the Android app are generated from the iOS project. After changing `AdvantageTune/Localizable.xcstrings` or `AdvantageTune/AppIcon.icon`, regenerate them:
+
+- Run `python3 android/tools/import_strings.py` to regenerate the string resources.
+- Run `python3 android/tools/generate_icons.py` to regenerate the launcher icon (this requires [Pillow](https://python-pillow.org)).
