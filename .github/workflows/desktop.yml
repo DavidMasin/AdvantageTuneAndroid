@@ -1,0 +1,64 @@
+name: Build Desktop
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build AdvantageTune
+        working-directory: desktop
+        run: ./gradlew test createDistributable packageMsi
+
+      - name: Check that the app starts
+        shell: pwsh
+        run: |
+          $app = "desktop/build/compose/binaries/main/app/AdvantageTune/AdvantageTune.exe"
+          Start-Process -FilePath $app
+
+          # Wait for the window
+          $window = $null
+          $deadline = (Get-Date).AddSeconds(90)
+          while (-not $window -and (Get-Date) -lt $deadline) {
+            Start-Sleep -Seconds 2
+            $window = Get-Process -Name AdvantageTune -ErrorAction SilentlyContinue |
+              Where-Object { $_.MainWindowTitle -eq "AdvantageTune" } |
+              Select-Object -First 1
+          }
+          if (-not $window) { throw "The app did not open its window" }
+
+          # Closing the window ends the app and stores where the window was
+          $window.CloseMainWindow() | Out-Null
+          if (-not $window.WaitForExit(30000)) { throw "The app did not exit" }
+          $settings = Get-Content "$env:APPDATA/AdvantageTune/settings.properties"
+          $settings
+          if ($settings -notcontains "window_placement=maximized") {
+            throw "The window did not open maximized"
+          }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v6
+        with:
+          name: AdvantageTune-Windows-Installer
+          path: desktop/build/compose/binaries/main/msi/*.msi
+          if-no-files-found: error
+
+      - name: Upload portable app
+        uses: actions/upload-artifact@v6
+        with:
+          name: AdvantageTune-Windows-Portable
+          path: desktop/build/compose/binaries/main/app
+          if-no-files-found: error

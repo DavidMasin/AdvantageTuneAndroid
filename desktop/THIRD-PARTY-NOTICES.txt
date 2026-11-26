@@ -1,0 +1,35 @@
+AdvantageTune for desktop includes the following software.
+
+AdvantageTune
+  Copyright (c) 2026 Littleton Robotics. All rights reserved.
+  License: license_advantagetune.txt
+
+Compose Multiplatform, Skiko and Kotlin
+  Copyright JetBrains s.r.o. and Kotlin Programming Language contributors
+  License: Apache License 2.0 (license_apache.txt)
+
+Jetpack Compose and AndroidX
+  Copyright The Android Open Source Project
+  License: Apache License 2.0 (license_apache.txt)
+
+Skia
+  Copyright (c) 2011 Google Inc. All rights reserved.
+  License: BSD 3-Clause, https://skia.org/license/
+
+OkHttp and Okio
+  Copyright Square, Inc.
+  License: Apache License 2.0 (license_apache.txt)
+
+Protocol Buffers
+  Copyright 2008 Google Inc. All rights reserved.
+  License: license_protobuf.txt
+
+Java Native Access (JNA)
+  Copyright (c) 2007-2019 Timothy Wall and contributors
+  License: Apache License 2.0 (license_apache.txt)
+
+JSON-java
+  Released into the public domain
+
+The Java runtime in the runtime directory is OpenJDK. Its license and notices are in
+runtime/legal.

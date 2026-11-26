@@ -1,0 +1,24 @@
+name: Build Android
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build AdvantageTune
+        working-directory: android
+        run: ./gradlew assembleDebug testDebugUnitTest lintDebug

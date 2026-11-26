@@ -1,0 +1,17 @@
+# Gradle
+.gradle/
+build/
+
+# Local configuration (SDK location)
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+captures/
+.cxx/
+.kotlin/
+
+# Signing
+*.jks
+*.keystore

@@ -1,0 +1,6 @@
+{
+  "name": "advantagetune",
+  "version": "1.1.0",
+  "description": "Marks the root of the EAS project that builds the Android app (see README.md). The app has no JavaScript.",
+  "private": true
+}
